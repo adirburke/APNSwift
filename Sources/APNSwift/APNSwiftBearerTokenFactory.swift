@@ -12,7 +12,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-
 import Foundation
 import NIO
 internal final class APNSwiftBearerTokenFactory {
@@ -26,8 +25,10 @@ internal final class APNSwiftBearerTokenFactory {
         self.eventLoop = eventLoop
         self.eventLoop.assertInEventLoop()
         self.configuration = configuration
+        self.configuration.logger?.debug("Creating a new APNS token")
         self.currentBearerToken = try APNSwiftBearerTokenFactory.makeNewBearerToken(configuration: configuration)
-        self.updateTask = eventLoop.scheduleRepeatedTask(initialDelay: .minutes(55), delay: .minutes(55)) { task in
+        self.updateTask = eventLoop.scheduleRepeatedTask(initialDelay: .minutes(55), delay: .minutes(55)) { _ in
+            self.configuration.logger?.debug("Creating a new APNS token because old one expired")
             self.currentBearerToken = try APNSwiftBearerTokenFactory.makeNewBearerToken(configuration: configuration)
         }
     }
@@ -37,6 +38,7 @@ internal final class APNSwiftBearerTokenFactory {
         self.cancelled = true
         self.updateTask?.cancel()
         self.updateTask = nil
+        self.configuration.logger?.debug("Destroying APNS bearer token")
     }
 
     deinit {

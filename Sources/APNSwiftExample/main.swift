@@ -12,9 +12,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-import Foundation
-import NIO
 import APNSwift
+import Foundation
+import Logging
+import NIO
 import NIOHTTP1
 import NIOHTTP2
 import NIOSSL
@@ -24,11 +25,15 @@ var verbose = true
 
 let signer = try! APNSwiftSigner(filePath: "/Users/kylebrowning/Desktop/AuthKey_9UC9ZLQ8YW.p8")
 
+// optional
+var logger = Logger(label: "com.apnswift")
+logger.logLevel = .debug
 let apnsConfig = APNSwiftConfiguration(keyIdentifier: "9UC9ZLQ8YW",
                                        teamIdentifier: "ABBM6U9RM5",
                                        signer: signer,
                                        topic: "com.grasscove.Fern",
-                                       environment: .sandbox)
+                                       environment: .sandbox,
+                                       logger: logger)
 
 let apns = try APNSwiftConnection.connect(configuration: apnsConfig, on: group.next()).wait()
 

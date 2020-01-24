@@ -33,8 +33,7 @@ internal final class APNSwiftRequestEncoder: ChannelOutboundHandler {
     let collapseIdentifier: String?
     let topic: String?
     let pushType: APNSwiftConnection.PushType?
-    
-    
+
     init(deviceToken: String, configuration: APNSwiftConfiguration, bearerToken: String?, pushType: APNSwiftConnection.PushType, expiration: Date?, priority: Int?, collapseIdentifier: String?, topic: String?) {
         self.configuration = configuration
         self.bearerToken = bearerToken
@@ -45,14 +44,15 @@ internal final class APNSwiftRequestEncoder: ChannelOutboundHandler {
         self.topic = topic
         self.pushType = pushType
     }
-    
+
     convenience init(deviceToken: String, configuration: APNSwiftConfiguration, bearerToken: String, expiration: Date?, priority: Int?, collapseIdentifier: String?, topic: String? = nil) {
         self.init(deviceToken: deviceToken, configuration: configuration, bearerToken: bearerToken, pushType: .alert, expiration: expiration, priority: priority, collapseIdentifier: collapseIdentifier, topic: topic)
-        
+
     }
 
     /// See `ChannelOutboundHandler.write(context:data:promise:)`.
     func write(context: ChannelHandlerContext, data: NIOAny, promise: EventLoopPromise<Void>?) {
+        self.configuration.logger?.debug("Request - building")
         let buffer: ByteBuffer = unwrapOutboundIn(data)
         var reqHead = HTTPRequestHead(version: .init(major: 2, minor: 0), method: .POST, uri: "/3/device/\(deviceToken)")
         reqHead.headers.add(name: "content-type", value: "application/json")
@@ -63,7 +63,7 @@ internal final class APNSwiftRequestEncoder: ChannelOutboundHandler {
         } else {
             reqHead.headers.add(name: "apns-topic", value: configuration.topic)
         }
-        
+
         if let priority = self.priority {
             reqHead.headers.add(name: "apns-priority", value: String(priority))
         }
@@ -81,9 +81,10 @@ internal final class APNSwiftRequestEncoder: ChannelOutboundHandler {
         if let bearerToken = self.bearerToken {
             reqHead.headers.add(name: "authorization", value: "bearer \(bearerToken)")
         }
-
+        self.configuration.logger?.trace("Request - built")
         context.write(wrapOutboundOut(.head(reqHead))).cascadeFailure(to: promise)
         context.write(wrapOutboundOut(.body(.byteBuffer(buffer)))).cascadeFailure(to: promise)
         context.write(wrapOutboundOut(.end(nil)), promise: promise)
+        self.configuration.logger?.trace("Request - sent")
     }
 }
